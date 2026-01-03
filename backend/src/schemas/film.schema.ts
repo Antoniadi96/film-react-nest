@@ -9,8 +9,8 @@ export class ScheduleItem {
   @Prop({ required: true })
   daytime: Date;
 
-  @Prop({ required: true })
-  hall: string;
+  @Prop({ required: true, type: Number })
+  hall: number;
 
   @Prop({ required: true, min: 1 })
   rows: number;
