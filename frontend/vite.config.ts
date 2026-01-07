@@ -7,8 +7,21 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        includePaths: ['src/scss']
+        includePaths: ['src/scss']  // Оставляем эту настройку для SCSS
       }
     }
   },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/content/afisha': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      }
+    }
+  }
 })
