@@ -6,8 +6,8 @@ export class Schedule {
   @PrimaryColumn('uuid')
   id: string;
 
-  @Column({ type: 'timestamp' })
-  daytime: Date;
+  @Column({ type: 'varchar' })
+  daytime: string;
 
   @Column({ type: 'integer' })
   hall: number;
@@ -18,16 +18,16 @@ export class Schedule {
   @Column({ type: 'integer' })
   seats: number;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'double precision' })
   price: number;
 
   @Column({ type: 'text', nullable: true })
-  taken: string; // Будем хранить как "row:seat,row:seat"
+  taken: string;
 
-  @Column({ name: 'film_id' })
+  @Column({ name: 'filmId' }) // Имя колонки в кавычках в SQL
   filmId: string;
 
   @ManyToOne(() => Film, (film) => film.schedules)
-  @JoinColumn({ name: 'film_id' })
+  @JoinColumn({ name: 'filmId' })
   film: Film;
 }

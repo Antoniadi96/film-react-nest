@@ -26,9 +26,12 @@ export class FilmsPostgresRepository implements FilmsRepository {
   async findAll(): Promise<FilmDto[]> {
     this.logger.log('findAll called from PostgreSQL repository');
     try {
-      const films = await this.filmRepository.find();
+      const films = await this.filmRepository.find({
+        relations: ['schedules'],
+      });
       this.logger.log(`Found ${films.length} films in PostgreSQL`);
-      return films.map(this.mapToFilmDto);
+
+      return films.map((film) => this.mapToFilmDto(film));
     } catch (error) {
       this.logger.error('Error fetching films from PostgreSQL:', error);
       throw error;
@@ -47,9 +50,7 @@ export class FilmsPostgresRepository implements FilmsRepository {
       return null;
     }
 
-    this.logger.log(
-      `Found film: ${film.title} with ${film.schedules.length} schedules`,
-    );
+    this.logger.log(`Found film: ${film.title} with schedules`);
     return this.mapToFilmScheduleDto(film);
   }
 
@@ -58,7 +59,7 @@ export class FilmsPostgresRepository implements FilmsRepository {
     scheduleId: string,
   ): Promise<ScheduleDto | null> {
     const schedule = await this.scheduleRepository.findOne({
-      where: { id: scheduleId, filmId },
+      where: { id: scheduleId, filmId: filmId },
     });
 
     return schedule ? this.mapToScheduleDto(schedule) : null;
@@ -70,7 +71,7 @@ export class FilmsPostgresRepository implements FilmsRepository {
     takenSeats: string[],
   ): Promise<void> {
     await this.scheduleRepository.update(
-      { id: scheduleId, filmId },
+      { id: scheduleId, filmId: filmId },
       { taken: takenSeats.join(',') },
     );
   }
@@ -82,34 +83,36 @@ export class FilmsPostgresRepository implements FilmsRepository {
   ): Promise<boolean> {
     try {
       this.logger.log(`Attempting to book seats: ${seatsToBook.join(', ')}`);
+      const schedule = await this.scheduleRepository.findOne({
+        where: { id: scheduleId, filmId: filmId },
+      });
 
-      // Используем транзакцию для атомарности
-      const result = await this.scheduleRepository.query(
-        `UPDATE schedules 
-                 SET taken = array_to_string(
-                     array_cat(
-                         string_to_array(taken, ','), 
-                         $1::text[]
-                     ), ','
-                 )
-                 WHERE id = $2 AND film_id = $3 
-                 AND NOT EXISTS (
-                     SELECT 1 FROM unnest(string_to_array(taken, ',')) AS seat 
-                     WHERE seat = ANY($1::text[])
-                 )`,
-        [seatsToBook, scheduleId, filmId],
-      );
-
-      const success = result[1] > 0; // Количество обновленных строк
-      if (success) {
-        this.logger.log(`Successfully booked seats: ${seatsToBook.join(', ')}`);
-      } else {
-        this.logger.error(
-          `Failed to book seats (possibly already taken or race condition)`,
-        );
+      if (!schedule) {
+        this.logger.error(`Schedule ${scheduleId} not found`);
+        return false;
       }
 
-      return success;
+      const currentTaken = schedule.taken
+        ? schedule.taken.split(',').filter(Boolean)
+        : [];
+      const conflictingSeats = seatsToBook.filter((seat) =>
+        currentTaken.includes(seat),
+      );
+
+      if (conflictingSeats.length > 0) {
+        this.logger.error(
+          `Seats already taken: ${conflictingSeats.join(', ')}`,
+        );
+        return false;
+      }
+
+      const updatedTaken = [...currentTaken, ...seatsToBook].join(',');
+      await this.scheduleRepository.update(scheduleId, {
+        taken: updatedTaken,
+      });
+
+      this.logger.log(`Successfully booked seats: ${seatsToBook.join(', ')}`);
+      return true;
     } catch (error) {
       this.logger.error(`Error booking seats: ${error.message}`);
       return false;
@@ -117,39 +120,52 @@ export class FilmsPostgresRepository implements FilmsRepository {
   }
 
   private mapToFilmDto(film: Film): FilmDto {
-    const normalizeImagePath = (path: string): string => {
-      if (!path) return '';
-      return path.startsWith('/') ? path : '/' + path;
-    };
+    const tagsArray = film.tags
+      ? film.tags.split(',').map((tag) => tag.trim())
+      : [];
 
     return {
       id: film.id,
       rating: Number(film.rating),
       director: film.director,
-      tags: film.tags,
+      tags: tagsArray,
       title: film.title,
       about: film.about,
       description: film.description,
-      image: normalizeImagePath(film.image),
-      cover: normalizeImagePath(film.cover),
+      image: film.image.startsWith('/') ? film.image : '/' + film.image,
+      cover: film.cover.startsWith('/') ? film.cover : '/' + film.cover,
     };
   }
 
   private mapToFilmScheduleDto(film: Film): FilmScheduleDto {
+    const schedules =
+      film.schedules?.map((schedule) => this.mapToScheduleDto(schedule)) || [];
+
     return {
       ...this.mapToFilmDto(film),
-      schedule: film.schedules.map(this.mapToScheduleDto),
+      schedule: schedules,
     };
   }
 
   private mapToScheduleDto(schedule: Schedule): ScheduleDto {
+    let daytimeString: string;
+
+    if (typeof schedule.daytime === 'string') {
+      const date = new Date(schedule.daytime);
+      daytimeString = isNaN(date.getTime())
+        ? schedule.daytime
+        : date.toISOString();
+    } else {
+      daytimeString = String(schedule.daytime);
+    }
+
     return {
       id: schedule.id,
-      daytime: schedule.daytime.toISOString(),
+      daytime: daytimeString,
       hall: schedule.hall,
       rows: schedule.rows,
       seats: schedule.seats,
-      price: schedule.price,
+      price: Number(schedule.price),
       taken: schedule.taken ? schedule.taken.split(',').filter(Boolean) : [],
     };
   }

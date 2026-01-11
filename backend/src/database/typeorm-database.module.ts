@@ -13,10 +13,7 @@ import { Order } from '../entities/order.entity';
         const logger = new Logger('PostgreSQL');
         const host = configService.get<string>('POSTGRES_HOST', 'localhost');
         const port = configService.get<number>('POSTGRES_PORT', 5432);
-        const database = configService.get<string>(
-          'POSTGRES_DB',
-          'film_afisha',
-        );
+        const database = configService.get<string>('POSTGRES_DB', 'prac');
 
         logger.log(`Connecting to PostgreSQL at: ${host}:${port}/${database}`);
 
@@ -24,12 +21,12 @@ import { Order } from '../entities/order.entity';
           type: 'postgres',
           host,
           port,
-          username: configService.get<string>('POSTGRES_USER', 'postgres'),
-          password: configService.get<string>('POSTGRES_PASSWORD', 'postgres'),
+          username: configService.get<string>('POSTGRES_USER', 'prac'),
+          password: configService.get<string>('POSTGRES_PASSWORD', 'prac'),
           database,
           entities: [Film, Schedule, Order],
-          synchronize: process.env.NODE_ENV !== 'production',
-          logging: process.env.NODE_ENV === 'development',
+          synchronize: false,
+          logging: true,
         };
       },
       inject: [ConfigService],

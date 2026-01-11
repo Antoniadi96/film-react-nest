@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../../entities/order.entity';
-import { OrdersRepository } from '../interfaces/orders.repository.interface';
+import {
+  OrdersRepository,
+  OrderWithId,
+} from '../interfaces/orders.repository.interface';
 import { CreateOrderDto } from '../../orders/dto/order.dto';
 import { randomUUID } from 'crypto';
 
@@ -17,13 +20,11 @@ export class OrdersPostgresRepository implements OrdersRepository {
     this.logger.log('OrdersPostgresRepository initialized');
   }
 
-  async create(
-    order: CreateOrderDto,
-  ): Promise<{ id: string } & CreateOrderDto> {
-    const orderWithId = {
-      id: randomUUID(),
+  async create(order: CreateOrderDto): Promise<OrderWithId> {
+    const orderId = randomUUID();
+    const orderWithId: OrderWithId = {
+      id: orderId,
       ...order,
-      createdAt: new Date(),
     };
 
     this.logger.log(`Creating order with id: ${orderWithId.id}`);
@@ -31,6 +32,8 @@ export class OrdersPostgresRepository implements OrdersRepository {
     try {
       const createdOrder = this.orderRepository.create(orderWithId);
       await this.orderRepository.save(createdOrder);
+
+      this.logger.log(`Order ${orderId} created successfully`);
       return orderWithId;
     } catch (error) {
       this.logger.error(`Failed to create order: ${error.message}`);
@@ -46,25 +49,26 @@ export class OrdersPostgresRepository implements OrdersRepository {
     try {
       const orders = await this.orderRepository
         .createQueryBuilder('order')
-        .where(
-          `order.tickets @> '[{"film": "${filmId}", "session": "${scheduleId}"}]'`,
-        )
+        .where(`order.tickets @> :ticketFilter`, {
+          ticketFilter: JSON.stringify([{ film: filmId, session: scheduleId }]),
+        })
         .getMany();
 
-      const takenSeats: string[] = [];
+      const takenSeats: Set<string> = new Set();
+
       orders.forEach((order) => {
-        order.tickets.forEach((ticket) => {
+        order.tickets.forEach((ticket: any) => {
           if (ticket.film === filmId && ticket.session === scheduleId) {
-            takenSeats.push(`${ticket.row}:${ticket.seat}`);
+            takenSeats.add(`${ticket.row}:${ticket.seat}`);
           }
         });
       });
 
-      this.logger.log(`Found ${takenSeats.length} taken seats`);
-      return Array.from(new Set(takenSeats));
+      this.logger.log(`Found ${takenSeats.size} taken seats`);
+      return Array.from(takenSeats);
     } catch (error) {
       this.logger.error(`Error getting taken seats: ${error.message}`);
-      throw error;
+      return [];
     }
   }
 }

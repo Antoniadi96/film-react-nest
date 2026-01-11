@@ -12,8 +12,8 @@ export class Film {
   @Column({ type: 'varchar', length: 255 })
   director: string;
 
-  @Column({ type: 'simple-array' })
-  tags: string[];
+  @Column({ type: 'text' })
+  tags: string;
 
   @Column({ type: 'decimal', precision: 3, scale: 1 })
   rating: number;

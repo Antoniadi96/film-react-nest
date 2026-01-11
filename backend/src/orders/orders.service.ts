@@ -13,7 +13,6 @@ import { randomUUID } from 'crypto';
 import { OrdersRepository } from '../repositories/interfaces/orders.repository.interface';
 import { FilmsRepository } from '../repositories/interfaces/films.repository.interface';
 
-// Этот сервис содержит бизнес-логику работы с заказами (создание, валидация и т.д.)
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -25,7 +24,6 @@ export class OrdersService {
     private filmsRepository: FilmsRepository,
   ) {}
 
-  // Основной метод сервиса для создания нового заказа
   async create(createOrderDto: CreateOrderDto): Promise<OrderResponseDto> {
     this.logger.log('OrdersService: creating order');
 
@@ -91,7 +89,7 @@ export class OrdersService {
       throw new BadRequestException('Failed to book seats. Please try again.');
     }
 
-    await this.ordersRepository.create(createOrderDto);
+    const createdOrder = await this.ordersRepository.create(createOrderDto);
 
     const ticketsWithId: TicketResponseDto[] = createOrderDto.tickets.map(
       (ticket) => ({
@@ -101,7 +99,7 @@ export class OrdersService {
     );
 
     this.logger.log(
-      `OrdersService: order created with ${ticketsWithId.length} tickets`,
+      `OrdersService: order ${createdOrder.id} created with ${ticketsWithId.length} tickets`,
     );
 
     return {

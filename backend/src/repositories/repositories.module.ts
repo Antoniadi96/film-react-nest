@@ -1,4 +1,4 @@
-import { Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule, Global } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -19,6 +19,7 @@ import { Film as FilmEntity } from '../entities/film.entity';
 import { Schedule } from '../entities/schedule.entity';
 import { Order as OrderEntity } from '../entities/order.entity';
 
+@Global()
 @Module({})
 export class RepositoriesModule {
   static forRoot(databaseDriver: string): DynamicModule {
