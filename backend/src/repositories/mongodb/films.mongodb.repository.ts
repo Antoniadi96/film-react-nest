@@ -146,13 +146,13 @@ export class FilmsMongoDbRepository implements FilmsRepository {
   // Приватный метод для преобразования документа Mongoose в FilmDto
   private mapToFilmDto(film: Film): FilmDto {
     const normalizeImagePath = (path: string): string => {
-        if (!path) return '';
-        
-        // Убираем лишние слеши
-        let normalized = path.replace(/^\/+/, '');
-        normalized = '/' + normalized;
-        
-        return normalized;
+      if (!path) return '';
+
+      // Убираем лишние слеши
+      let normalized = path.replace(/^\/+/, '');
+      normalized = '/' + normalized;
+
+      return normalized;
     };
 
     return {
@@ -177,15 +177,16 @@ export class FilmsMongoDbRepository implements FilmsRepository {
 
   private mapToScheduleDto(schedule: any): ScheduleDto {
     return {
-        id: schedule.id,
-        daytime: schedule.daytime instanceof Date 
-            ? schedule.daytime.toISOString() 
-            : new Date(schedule.daytime).toISOString(),
-        hall: Number(schedule.hall),
-        rows: schedule.rows,
-        seats: schedule.seats,
-        price: schedule.price,
-        taken: schedule.taken || [],
+      id: schedule.id,
+      daytime:
+        schedule.daytime instanceof Date
+          ? schedule.daytime.toISOString()
+          : new Date(schedule.daytime).toISOString(),
+      hall: Number(schedule.hall),
+      rows: schedule.rows,
+      seats: schedule.seats,
+      price: schedule.price,
+      taken: schedule.taken || [],
     };
-}
+  }
 }

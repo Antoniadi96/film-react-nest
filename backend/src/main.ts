@@ -4,13 +4,12 @@ import { AppModule } from './app.module';
 import 'dotenv/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule.forRoot());
 
   app.setGlobalPrefix('api/afisha');
 
-  // Разрешаем запросы с фронтенда
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'], // оба порта
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
@@ -33,27 +32,15 @@ async function bootstrap() {
     }),
   );
 
-  // Добавляем простой корневой маршрут для проверки
-  app.getHttpAdapter().get('/', (req, res) => {
-    res.json({
-      message: 'Film! API is running',
-      api: 'http://localhost:3000/api/afisha',
-      frontend: 'http://localhost:5173',
-      endpoints: {
-        films: 'GET /api/afisha/films',
-        filmSchedule: 'GET /api/afisha/films/:id/schedule',
-        createOrder: 'POST /api/afisha/order',
-        staticFiles: 'GET /content/afisha/*',
-      },
-    });
-  });
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
 
-  await app.listen(3000);
   console.log('=======================================');
-  console.log('Film! Application');
-  console.log('Backend: http://localhost:3000');
+  console.log('🎬 Film! Application');
+  console.log(`Backend: http://localhost:${port}`);
   console.log('Frontend: http://localhost:5173');
-  console.log('API: http://localhost:3000/api/afisha');
+  console.log(`API: http://localhost:${port}/api/afisha`);
+  console.log(`Database: ${process.env.DATABASE_DRIVER || 'mongodb'}`);
   console.log('=======================================');
 }
 bootstrap();
