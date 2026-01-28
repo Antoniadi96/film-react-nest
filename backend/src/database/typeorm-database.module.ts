@@ -11,7 +11,7 @@ import { Order } from '../entities/order.entity';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const logger = new Logger('PostgreSQL');
-        const host = configService.get<string>('POSTGRES_HOST', 'localhost');
+        const host = configService.get<string>('POSTGRES_HOST', 'postgres');
         const port = configService.get<number>('POSTGRES_PORT', 5432);
         const database = configService.get<string>('POSTGRES_DB', 'prac');
 
