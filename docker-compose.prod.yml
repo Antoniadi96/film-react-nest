@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: film-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-prac}
+      POSTGRES_USER: ${POSTGRES_USER:-prac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prac}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - film-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: film-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@film.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - film-network
+
+  backend:
+    image: ghcr.io/antoniadi96/film-backend:latest
+    container_name: film-backend
+    restart: always
+    environment:
+      NODE_ENV: ${BACKEND_NODE_ENV:-production}
+      PORT: ${BACKEND_PORT:-3000}
+      DATABASE_URL: ${BACKEND_DATABASE_URL:-postgresql://prac:prac@postgres:5432/prac}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-prac}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prac}
+      POSTGRES_DB: ${POSTGRES_DB:-prac}
+    ports:
+      - "3001:${BACKEND_PORT:-3000}"
+    depends_on:
+      - postgres
+    networks:
+      - film-network
+
+  nginx:
+    image: ghcr.io/antoniadi96/film-nginx:latest
+    container_name: film-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - film-network
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  film-network:
+    driver: bridge
