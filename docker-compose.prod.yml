@@ -44,6 +44,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-prac}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prac}
       POSTGRES_DB: ${POSTGRES_DB:-prac}
+    volumes:
+      - ./backend/public:/app/public4
     ports:
       - "3001:${BACKEND_PORT:-3000}"
     depends_on:
@@ -58,6 +60,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./backend/public:/usr/share/nginx/html/public
     depends_on:
       - backend
     networks:
