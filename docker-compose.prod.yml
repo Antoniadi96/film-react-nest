@@ -37,6 +37,7 @@ services:
     environment:
       NODE_ENV: ${BACKEND_NODE_ENV:-production}
       PORT: ${BACKEND_PORT:-3000}
+      DATABASE_DRIVER: postgres
       DATABASE_URL: ${BACKEND_DATABASE_URL:-postgresql://prac:prac@postgres:5432/prac}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
