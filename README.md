@@ -5,10 +5,9 @@
 ## 🚀 Демо
 
 - **Приложение:** http://antoniadi.students.nomorepartiessbs.ru
-- **API:** http://antoniadi.students.nomorepartiessbs.ru/api/afisha
+- **API:** http://antoniadi.students.nomorepartiessbs.ru/api/afisha/films
 - **Репозиторий:** https://github.com/Antoniadi96/film-react-nest
 - **GitHub Actions:** https://github.com/Antoniadi96/film-react-nest/actions
-- **Docker образы:** https://github.com/Antoniadi96/film-react-nest/pkgs/container/film-react-nest
 
 ## 🎯 Технологии
 
