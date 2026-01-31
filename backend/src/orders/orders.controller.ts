@@ -15,14 +15,12 @@ import {
   TicketIncomingDto,
 } from './dto/order.dto';
 
-// Декоратор @Controller определяет базовый маршрут для этого контроллера
 @Controller('order')
 export class OrdersController {
   private readonly logger = new Logger(OrdersController.name);
 
   constructor(private readonly ordersService: OrdersService) {}
 
-  // Обработчик POST-запроса для создания нового заказа
   @Post()
   async create(
     @Body() createOrderIncomingDto: CreateOrderIncomingDto,
@@ -51,6 +49,11 @@ export class OrdersController {
       if (error instanceof BadRequestException) {
         throw error;
       }
+
+      if (error.getStatus && error.getStatus() === HttpStatus.BAD_REQUEST) {
+        throw error;
+      }
+
       throw new HttpException(
         { error: 'Internal server error' },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -58,7 +61,6 @@ export class OrdersController {
     }
   }
 
-  // Приватный метод для преобразования билета из входящего формата во внутренний формат
   private convertTicketIncomingToTicketDto(ticketIncoming: TicketIncomingDto) {
     let daytime: string;
 
@@ -82,22 +84,33 @@ export class OrdersController {
     };
   }
 
-  // Приватный метод для объединения дня и времени в одну строку
   private combineDayTime(day: string, time: string): string {
     let date: Date;
 
     if (day.includes('-')) {
       date = new Date(day);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException(`Invalid date format: ${day}`);
+      }
     } else if (day.includes('.')) {
       const parts = day.split('.');
       if (parts.length === 3) {
-        date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        // Формат dd.mm.yyyy
+        const dayNum = parseInt(parts[0], 10);
+        const monthNum = parseInt(parts[1], 10) - 1;
+        const yearNum = parseInt(parts[2], 10);
+
+        date = new Date(yearNum, monthNum, dayNum);
+        if (isNaN(date.getTime())) {
+          throw new BadRequestException(`Invalid date format: ${day}`);
+        }
       } else {
         throw new BadRequestException(`Invalid date format: ${day}`);
       }
     } else {
       throw new BadRequestException(`Invalid date format: ${day}`);
     }
+
     const [hours, minutes, seconds = '00'] = time.split(':');
     date.setHours(
       parseInt(hours, 10),
@@ -109,11 +122,11 @@ export class OrdersController {
     return date.toISOString();
   }
 
-  // Приватный метод для гарантии, что дата в ISO формате
   private ensureISODateFormat(dateString: string): string {
     if (dateString.includes('T') && dateString.endsWith('Z')) {
       return dateString;
     }
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
       throw new BadRequestException(`Invalid date format: ${dateString}`);
